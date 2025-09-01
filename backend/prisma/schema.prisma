@@ -1,0 +1,340 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String
+  role          Role      @default(CUSTOMER)
+  isActive      Boolean   @default(true)
+  emailVerified DateTime?
+  image         String?
+  balance       Int       @default(0) // Balance in IDR (no decimals)
+  phone         String?
+  address       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  orders        Order[]
+  massOrders    MassOrder[]
+  transactions  Transaction[]
+  apiKeys       ApiKey[]
+  notifications Notification[]
+  supportTickets SupportTicket[]
+  userSettings  UserSettings?
+
+  @@map("users")
+}
+
+model UserSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  language              String   @default("en")
+  timezone              String   @default("Asia/Jakarta")
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(true)
+  autoDeposit           Boolean  @default(false)
+  depositThreshold      Int      @default(0) // Threshold in IDR
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model GlobalSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("global_settings")
+}
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products    Product[]
+
+  @@map("service_categories")
+}
+
+model Provider {
+  id          String   @id @default(cuid())
+  name        String   @default("MedanPedia")
+  apiKey      String
+  baseUrl     String   @default("https://medanpedia.com/api/v2")
+  isActive    Boolean  @default(true)
+  markup      Int      @default(10) // Markup percentage (10 = 10%)
+  currency    String   @default("IDR")
+  config      Json     // MedanPedia-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products    Product[]
+  markupHistory MarkupHistory[]
+
+  @@map("providers")
+}
+
+model MarkupHistory {
+  id          String   @id @default(cuid())
+  providerId  String
+  oldMarkup   Int      // Previous markup percentage
+  newMarkup   Int      // New markup percentage
+  changedBy   String   // User ID who made the change
+  reason      String?  // Reason for change
+  createdAt   DateTime @default(now())
+
+  // Relations
+  provider    Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("markup_history")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String   // Original name from MedanPedia
+  customName  String?  // Your custom name for the service
+  description String?
+  customDescription String? // Your custom description
+  categoryId  String?
+  providerId  String   // Provider ID (MedanPedia)
+  serviceType String   // e.g., "instagram_likes", "twitter_followers"
+  minQuantity Int
+  maxQuantity Int
+  price       Int      // Price in IDR (no decimals) - calculated with markup
+  originalPrice Int    // Original price from MedanPedia in IDR
+  isActive    Boolean  @default(true)
+  apiServiceId String  // MedanPedia service ID
+  isImported  Boolean  @default(true)
+  isCustom    Boolean  @default(false) // Whether this is a custom service
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id])
+  provider    Provider         @relation(fields: [providerId], references: [id])
+  orders      Order[]
+
+  @@map("products")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  productId   String
+  quantity    Int
+  link        String
+  status      OrderStatus @default(PENDING)
+  totalPrice  Int         // Total price in IDR (no decimals)
+  notes       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  providerOrderId String? // MedanPedia order ID
+  providerResponse Json?  // Response from MedanPedia
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+  transaction Transaction?
+
+  @@map("orders")
+}
+
+model MassOrder {
+  id          String      @id @default(cuid())
+  userId      String
+  orders      Json         // Array of order data: [{service_id, target, amount, notes}]
+  status      OrderStatus  @default(PENDING)
+  totalAmount Int          // Total amount in IDR
+  totalOrders Int
+  completedOrders Int      @default(0)
+  failedOrders Int         @default(0)
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mass_orders")
+}
+
+model Transaction {
+  id            String            @id @default(cuid())
+  userId        String
+  orderId       String?           @unique
+  type          TransactionType
+  amount        Int               // Amount in IDR (no decimals)
+  status        TransactionStatus @default(PENDING)
+  paymentMethod PaymentMethod?
+  paymentId     String?           // External payment ID
+  description   String?
+  metadata      Json?             // Payment gateway response
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order         Order?            @relation(fields: [orderId], references: [id])
+
+  @@map("transactions")
+}
+
+model SupportTicket {
+  id          String       @id @default(cuid())
+  userId      String
+  subject     String
+  message     String
+  status      TicketStatus @default(OPEN)
+  priority    Priority     @default(MEDIUM)
+  category    String?      // e.g., "technical", "billing", "general"
+  attachments Json?        // Array of file attachments
+  adminNotes  String?      // Internal notes for admins
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("support_tickets")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  key       String   @unique
+  isActive  Boolean  @default(true)
+  permissions Json?  // API permissions
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model ExternalApi {
+  id          String   @id @default(cuid())
+  name        String
+  baseUrl     String
+  apiKey      String
+  isActive    Boolean  @default(true)
+  config      Json     // API-specific configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("external_apis")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean  @default(false)
+  actionUrl String?  // URL to redirect when clicked
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  FAILED
+  PARTIAL
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  ORDER_PAYMENT
+  REFUND
+  SERVICE_FAILED_REFUND
+}
+
+enum PaymentMethod {
+  MIDTRANS
+  XENDIT
+  BANK_TRANSFER
+  E_WALLET
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ORDER_UPDATE
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_USER
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+} 
