@@ -206,7 +206,8 @@ describe('👥 User Management API', () => {
         const userData = global.testUtils.createTestUser();
         const response = await request(app)
           .post('/api/users')
-          .send(userData);
+          .send(userData)
+          .expect(201);
         testUserId = response.body.data.id;
       });
 
@@ -247,7 +248,8 @@ describe('👥 User Management API', () => {
         const userData = global.testUtils.createTestUser();
         const response = await request(app)
           .post('/api/users')
-          .send(userData);
+          .send(userData)
+          .expect(201);
         testUserId = response.body.data.id;
       });
 
@@ -313,7 +315,8 @@ describe('👥 User Management API', () => {
         const userData = global.testUtils.createTestUser();
         const response = await request(app)
           .post('/api/users')
-          .send(userData);
+          .send(userData)
+          .expect(201);
         testUserId = response.body.data.id;
       });
 

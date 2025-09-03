@@ -19,7 +19,100 @@ global.testUtils = {
   // Helper to clean up test data
   cleanupTestData: async (prisma) => {
     try {
-      // Clean up test users (you can add more cleanup here)
+      // Clean up in reverse order of dependencies to avoid foreign key constraints
+      
+      // 1. Clean up services (depend on categories and providers)
+      await prisma.product.deleteMany({
+        where: {
+          OR: [
+            { name: { contains: 'Test' } },
+            { name: { contains: 'Instagram' } },
+            { name: { contains: 'TikTok' } },
+            { name: { contains: 'YouTube' } },
+            { name: { contains: 'Bulk' } },
+            { name: { contains: 'Filter' } },
+            { name: { contains: 'Price' } },
+            { name: { contains: 'List' } },
+            { name: { contains: 'Service' } },
+            { name: { contains: 'Category' } },
+            { name: { contains: 'Provider' } },
+            { name: { contains: 'Admin' } },
+            { name: { contains: 'Error' } },
+            { name: { contains: 'Quantity' } },
+            { name: { contains: 'Conflict' } },
+            { name: { contains: 'Duplicate' } },
+            { name: { contains: 'Update' } },
+            { name: { contains: 'Delete' } },
+            { name: { contains: 'Search' } },
+            { name: { contains: 'Active' } },
+            { name: { contains: 'Imported' } },
+            { name: { contains: 'Custom' } }
+          ]
+        }
+      });
+      
+      // 2. Clean up providers
+      await prisma.provider.deleteMany({
+        where: {
+          OR: [
+            { name: { contains: 'Test' } },
+            { name: { contains: 'Instagram' } },
+            { name: { contains: 'TikTok' } },
+            { name: { contains: 'YouTube' } },
+            { name: { contains: 'Bulk' } },
+            { name: { contains: 'Filter' } },
+            { name: { contains: 'Price' } },
+            { name: { contains: 'List' } },
+            { name: { contains: 'Service' } },
+            { name: { contains: 'Category' } },
+            { name: { contains: 'Provider' } },
+            { name: { contains: 'Admin' } },
+            { name: { contains: 'Error' } },
+            { name: { contains: 'Quantity' } },
+            { name: { contains: 'Conflict' } },
+            { name: { contains: 'Duplicate' } },
+            { name: { contains: 'Update' } },
+            { name: { contains: 'Delete' } },
+            { name: { contains: 'Search' } },
+            { name: { contains: 'Active' } },
+            { name: { contains: 'Imported' } },
+            { name: { contains: 'Custom' } },
+            { name: { contains: 'MedanPedia' } }
+          ]
+        }
+      });
+      
+      // 3. Clean up categories
+      await prisma.serviceCategory.deleteMany({
+        where: {
+          OR: [
+            { name: { contains: 'Test' } },
+            { name: { contains: 'Instagram' } },
+            { name: { contains: 'TikTok' } },
+            { name: { contains: 'YouTube' } },
+            { name: { contains: 'Bulk' } },
+            { name: { contains: 'Filter' } },
+            { name: { contains: 'Price' } },
+            { name: { contains: 'List' } },
+            { name: { contains: 'Service' } },
+            { name: { contains: 'Category' } },
+            { name: { contains: 'Provider' } },
+            { name: { contains: 'Admin' } },
+            { name: { contains: 'Error' } },
+            { name: { contains: 'Quantity' } },
+            { name: { contains: 'Conflict' } },
+            { name: { contains: 'Duplicate' } },
+            { name: { contains: 'Update' } },
+            { name: { contains: 'Delete' } },
+            { name: { contains: 'Search' } },
+            { name: { contains: 'Active' } },
+            { name: { contains: 'Imported' } },
+            { name: { contains: 'Custom' } }
+          ]
+        }
+      });
+      
+      // 4. Clean up test users
       await prisma.user.deleteMany({
         where: {
           email: {
@@ -27,6 +120,17 @@ global.testUtils = {
           }
         }
       });
+      
+      // 5. Clean up markup history
+      await prisma.markupHistory.deleteMany({
+        where: {
+          OR: [
+            { providerId: { contains: 'test' } },
+            { markupPercentage: { gte: 100 } } // Test markup values
+          ]
+        }
+      });
+      
     } catch (error) {
       console.warn('Cleanup warning:', error.message);
     }

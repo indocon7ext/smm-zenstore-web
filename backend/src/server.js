@@ -11,8 +11,12 @@ require('dotenv').config();                   // Load environment variables from
 // Import our database connection
 const { prisma } = require('../lib/prisma');  // Our shared Prisma client
 
-// Import route files (we'll create these next)
+// Import route files
 const userRoutes = require('./routes/users'); // User management routes
+const serviceRoutes = require('./routes/services'); // Service management routes
+const categoryRoutes = require('./routes/categories'); // Category management routes
+const providerRoutes = require('./routes/providers'); // Provider management routes
+const adminRoutes = require('./routes/admin'); // Admin management routes
 
 // Create Express application instance
 const app = express();
@@ -59,21 +63,45 @@ app.get('/health', (req, res) => {
 
 // 🛣️ API ROUTES (Organize routes by feature)
 app.use('/api/users', userRoutes);           // All user-related routes start with /api/users
+app.use('/api/services', serviceRoutes);     // All service-related routes start with /api/services
+app.use('/api/categories', categoryRoutes);  // All category-related routes start with /api/categories
+app.use('/api/providers', providerRoutes);  // All provider-related routes start with /api/providers
+app.use('/api/admin', adminRoutes);          // All admin-related routes start with /api/admin
 
 // 🚫 404 HANDLER (Route not found)
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Route not found',
     message: `The route ${req.originalUrl} does not exist`,
-    availableRoutes: [
-      'GET /',
-      'GET /health',
-      'GET /api/users',
-      'POST /api/users',
-      'GET /api/users/:id',
-      'PUT /api/users/:id',
-      'DELETE /api/users/:id'
-    ]
+               availableRoutes: [
+             'GET /',
+             'GET /health',
+             'GET /api/users',
+             'POST /api/users',
+             'GET /api/users/:id',
+             'PUT /api/users/:id',
+             'DELETE /api/users/:id',
+             'GET /api/services',
+             'POST /api/services',
+             'GET /api/services/:id',
+             'PUT /api/services/:id',
+             'DELETE /api/services/:id',
+             'POST /api/services/bulk',
+             'POST /api/services/import',
+             'GET /api/categories',
+             'POST /api/categories',
+             'GET /api/categories/:id',
+             'PUT /api/categories/:id',
+             'DELETE /api/categories/:id',
+             'GET /api/providers',
+             'POST /api/providers',
+             'GET /api/providers/:id',
+             'PUT /api/providers/:id',
+             'DELETE /api/providers/:id',
+             'GET /api/admin/dashboard',
+             'PUT /api/admin/markup',
+             'POST /api/admin/import'
+           ]
   });
 });
 
