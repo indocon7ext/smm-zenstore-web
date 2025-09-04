@@ -17,6 +17,11 @@ const serviceRoutes = require('./routes/services'); // Service management routes
 const categoryRoutes = require('./routes/categories'); // Category management routes
 const providerRoutes = require('./routes/providers'); // Provider management routes
 const adminRoutes = require('./routes/admin'); // Admin management routes
+const orderRoutes = require('./routes/orders'); // Order management routes
+const transactionRoutes = require('./routes/transactions'); // Transaction management routes
+
+// Import WebSocket server
+const WebSocketServer = require('./websocket');
 
 // Create Express application instance
 const app = express();
@@ -67,6 +72,8 @@ app.use('/api/services', serviceRoutes);     // All service-related routes start
 app.use('/api/categories', categoryRoutes);  // All category-related routes start with /api/categories
 app.use('/api/providers', providerRoutes);  // All provider-related routes start with /api/providers
 app.use('/api/admin', adminRoutes);          // All admin-related routes start with /api/admin
+app.use('/api/orders', orderRoutes);         // All order-related routes start with /api/orders
+app.use('/api/transactions', transactionRoutes); // All transaction-related routes start with /api/transactions
 
 // 🚫 404 HANDLER (Route not found)
 app.use('*', (req, res) => {
@@ -100,7 +107,20 @@ app.use('*', (req, res) => {
              'DELETE /api/providers/:id',
              'GET /api/admin/dashboard',
              'PUT /api/admin/markup',
-             'POST /api/admin/import'
+             'POST /api/admin/import',
+             'GET /api/orders',
+             'POST /api/orders',
+             'GET /api/orders/:id',
+             'PATCH /api/orders/:id/status',
+             'PATCH /api/orders/:id/cancel',
+             'GET /api/orders/stats/summary',
+             'GET /api/transactions',
+             'POST /api/transactions/deposit',
+             'POST /api/transactions/withdrawal',
+             'PATCH /api/transactions/:id/confirm-payment',
+             'PATCH /api/transactions/:id/process-withdrawal',
+             'GET /api/transactions/:id',
+             'GET /api/transactions/stats/summary'
            ]
   });
 });
@@ -125,11 +145,18 @@ const startServer = async () => {
     console.log('✅ Database connected successfully');
     
     // Start listening for requests
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
       console.log(`🔗 Health Check: http://localhost:${PORT}/health`);
       console.log(`📊 API Base: http://localhost:${PORT}/api`);
+      
+      // Initialize WebSocket server
+      const wsServer = new WebSocketServer(server);
+      console.log('🔌 WebSocket server initialized');
+      
+      // Make WebSocket server available globally for broadcasting
+      global.wsServer = wsServer;
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

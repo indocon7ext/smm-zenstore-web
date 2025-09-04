@@ -164,7 +164,7 @@ model Order {
   // Relations
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   product     Product     @relation(fields: [productId], references: [id])
-  transaction Transaction?
+  transactions Transaction[] // Change from one-to-one to one-to-many
 
   @@map("orders")
 }
@@ -191,7 +191,7 @@ model MassOrder {
 model Transaction {
   id            String            @id @default(cuid())
   userId        String
-  orderId       String?           @unique
+  orderId       String?           // Remove @unique constraint to allow multiple transactions per order
   type          TransactionType
   amount        Int               // Amount in IDR (no decimals)
   status        TransactionStatus @default(PENDING)
